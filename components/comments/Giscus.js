@@ -1,36 +1,31 @@
-import React, { useState, useEffect, useCallback } from 'react'
-import { useTheme } from 'next-themes'
-
 import siteMetadata from '@/data/siteMetadata'
+import { useTheme } from 'next-themes'
+import React, { useEffect } from 'react'
 
 const Giscus = () => {
-  const [enableLoadComments, setEnabledLoadComments] = useState(true)
   const { theme, resolvedTheme } = useTheme()
-  const commentsTheme =
-    siteMetadata.comment.giscusConfig.themeURL === ''
-      ? theme === 'dark' || resolvedTheme === 'dark'
-        ? siteMetadata.comment.giscusConfig.darkTheme
-        : siteMetadata.comment.giscusConfig.theme
-      : siteMetadata.comment.giscusConfig.themeURL
+  const {
+    themeURL,
+    theme: lightTheme,
+    darkTheme,
+    lang,
+    metadata,
+    reactions,
+    repo,
+    category,
+    categoryId,
+    mapping,
+    repositoryId,
+  } = siteMetadata.comment.giscusConfig
 
   const COMMENTS_ID = 'comments-container'
 
-  const LoadComments = useCallback(() => {
-    setEnabledLoadComments(false)
+  useEffect(() => {
+    let isDark = theme === 'dark' || resolvedTheme === 'dark'
+    let giscusTheme = isDark ? darkTheme : lightTheme
+    if (themeURL) giscusTheme = themeURL
 
-    const {
-      repo,
-      repositoryId,
-      category,
-      categoryId,
-      mapping,
-      reactions,
-      metadata,
-      inputPosition,
-      lang,
-    } = siteMetadata?.comment?.giscusConfig
-
-    const script = document.createElement('script')
+    let script = document.createElement('script')
     script.src = 'https://giscus.app/client.js'
     script.setAttribute('data-repo', repo)
     script.setAttribute('data-repo-id', repositoryId)
@@ -39,31 +34,23 @@ const Giscus = () => {
     script.setAttribute('data-mapping', mapping)
     script.setAttribute('data-reactions-enabled', reactions)
     script.setAttribute('data-emit-metadata', metadata)
-    script.setAttribute('data-input-position', inputPosition)
     script.setAttribute('data-lang', lang)
-    script.setAttribute('data-theme', commentsTheme)
-    script.setAttribute('crossorigin', 'anonymous')
+    script.setAttribute('data-theme', giscusTheme)
+    script.setAttribute('crossOrigin', 'anonymous')
     script.async = true
 
-    const comments = document.getElementById(COMMENTS_ID)
-    if (comments) comments.appendChild(script)
+    let commentsNode = document.getElementById(COMMENTS_ID)
+    if (commentsNode) commentsNode.appendChild(script)
 
     return () => {
-      const comments = document.getElementById(COMMENTS_ID)
+      let comments = document.getElementById(COMMENTS_ID)
       if (comments) comments.innerHTML = ''
     }
-  }, [commentsTheme])
-
-  // Reload on theme change
-  useEffect(() => {
-    const iframe = document.querySelector('iframe.giscus-frame')
-    if (!iframe) return
-    LoadComments()
-  }, [LoadComments])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [theme, resolvedTheme])
 
   return (
-    <div className="pt-6 pb-6 text-center text-gray-700 dark:text-gray-300">
-      {enableLoadComments && <button onClick={LoadComments}>Load Comments</button>}
+    <div className="pb-6 pt-6 text-center text-gray-700 dark:text-gray-300">
       <div className="giscus" id={COMMENTS_ID} />
     </div>
   )
